@@ -1,0 +1,57 @@
+apiVersion: apps/v1  
+kind: Deployment  
+metadata:  
+  name: health-check-service  
+spec:  
+  replicas: 3  
+  selector:  
+    matchLabels:  
+      app: health-check-service  
+  template:  
+    metadata:  
+      labels:  
+        app: health-check-service  
+    spec:  
+      containers:  
+      - name: health-check-service  
+        image: my_microservice:latest  
+        ports:  
+        - containerPort: 5000  
+        env:  
+        - name: KAFKA_BROKER  
+          valueFrom:  
+            configMapKeyRef:  
+              name: health-check-service-config  
+              key: kafka_broker  
+        - name: KAFKA_TOPIC  
+          valueFrom:  
+            configMapKeyRef:  
+              name: health-check-service-config  
+              key: kafka_topic  
+        - name: TZ  
+          value: Europe/Bucharest  
+        volumeMounts:  
+        - name: health-check-service-config  
+          mountPath: /etc/config  
+          readOnly: true  
+      volumes:  
+      - name: health-check-service-config  
+        configMap:  
+          name: health-check-service-config  
+          items:  
+          - key: config.json  
+            path: config.json  
+
+apiVersion: v1  
+kind: Service  
+metadata:  
+  name: health-check-service  
+spec:  
+  selector:  
+    app: health-check-service  
+  ports:  
+  - name: http  
+    protocol: TCP  
+    port: 80  
+    targetPort: 5000  
+  type: LoadBalancer
